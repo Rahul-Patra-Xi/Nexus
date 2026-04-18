@@ -1,15 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapStub } from "@/components/modules/MapStub";
 import { ModuleLayout } from "@/components/modules/ModuleLayout";
 import { NeuActionButton } from "@/components/modules/NeuActionButton";
 import { StepStrip } from "@/components/modules/StepStrip";
-import { CAB_VEHICLES, DESTINATION_PRESETS, DRIVER_POOL, fareForCab, type CabVehicle } from "@/data/modulesDataset";
+import { CAB_VEHICLES, DESTINATION_PRESETS, DRIVER_POOL, fareForCab, type CabVehicle, type DestinationPreset } from "@/data/modulesDataset";
 import { useLocation } from "@/contexts/LocationContext";
-import { distanceKm, formatDistanceKm, formatEtaMinutes } from "@/lib/geo";
+import { distanceKm, formatDistanceKm, formatEtaMinutes, searchAddress, type AddressSuggestion } from "@/lib/geo";
 import { mockDelay } from "@/lib/mockApi";
 import { appendLocalActivity } from "@/lib/localActivityLog";
-import { Car, MapPinned, Search, User } from "lucide-react";
+import { Car, Loader2, MapPin, MapPinned, Navigation2, Search, User, X } from "lucide-react";
 
 type Phase = "discover" | "select" | "confirm" | "track" | "complete";
 type RideSub = "searching" | "assigned" | "enroute" | "done";
@@ -25,18 +25,46 @@ const stepIndex: Record<Phase, number> = {
 export const CabModule = () => {
   const { coords, label: pickupLabel } = useLocation();
   const [phase, setPhase] = useState<Phase>("discover");
-  const [destId, setDestId] = useState(DESTINATION_PRESETS[0]!.id);
+  const [dest, setDest] = useState<DestinationPreset>(DESTINATION_PRESETS[0]!);
+  // destination autocomplete
+  const [destQuery, setDestQuery] = useState("");
+  const [destSuggestions, setDestSuggestions] = useState<AddressSuggestion[]>([]);
+  const [destSearching, setDestSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const destInputRef = useRef<HTMLInputElement>(null);
+
   const [vehicle, setVehicle] = useState<CabVehicle | null>(null);
   const [ride, setRide] = useState<RideSub>("searching");
   const [driver, setDriver] = useState<(typeof DRIVER_POOL)[0] | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const dest = DESTINATION_PRESETS.find((d) => d.id === destId) ?? DESTINATION_PRESETS[0]!;
-
   const distKm = useMemo(() => {
     if (!coords) return 4.2;
     return Math.round(distanceKm(coords, dest) * 10) / 10;
   }, [coords, dest]);
+
+  // destination autocomplete debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (destQuery.trim().length < 3) {
+      setDestSuggestions([]);
+      setDestSearching(false);
+      return;
+    }
+    setDestSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      const results = await searchAddress(destQuery);
+      setDestSuggestions(results);
+      setDestSearching(false);
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [destQuery]);
+
+  const pickDest = (label: string, lat: number, lng: number) => {
+    setDest({ id: "custom", label, lat, lng });
+    setDestQuery("");
+    setDestSuggestions([]);
+  };
 
   const vehiclesRated = useMemo(() => {
     return CAB_VEHICLES.map((v) => ({
@@ -99,17 +127,79 @@ export const CabModule = () => {
             </div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Where to?</label>
-              <select
-                value={destId}
-                onChange={(e) => setDestId(e.target.value)}
-                className="mt-1 w-full px-4 py-3 rounded-2xl neu-pressed-sm bg-transparent text-sm font-medium"
-              >
-                {DESTINATION_PRESETS.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1 relative">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl neu-pressed-sm">
+                  <Navigation2 className="h-4 w-4 text-primary shrink-0" />
+                  <input
+                    ref={destInputRef}
+                    value={destQuery}
+                    onChange={(e) => setDestQuery(e.target.value)}
+                    placeholder={dest.label}
+                    className="flex-1 bg-transparent text-sm font-medium focus:outline-none placeholder:text-foreground/70"
+                  />
+                  {destQuery.length > 0 ? (
+                    destSearching
+                      ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                      : <button type="button" onClick={() => { setDestQuery(""); setDestSuggestions([]); destInputRef.current?.focus(); }}>
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                  ) : (
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                </div>
+
+                {/* Autocomplete dropdown */}
+                <AnimatePresence>
+                  {destSuggestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="absolute z-20 mt-1 w-full rounded-2xl bg-gradient-surface shadow-neu-raised border border-border/40 overflow-hidden"
+                    >
+                      {destSuggestions.map((s, i) => (
+                        <motion.button
+                          key={s.placeId}
+                          type="button"
+                          initial={{ opacity: 0, x: -4 }}
+                          animate={{ opacity: 1, x: 0, transition: { delay: i * 0.04 } }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => pickDest(`${s.label}, ${s.sublabel}`, s.lat, s.lng)}
+                          className="w-full flex items-start gap-3 px-4 py-3 hover:bg-accent/60 transition-colors text-left"
+                        >
+                          <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold truncate">{s.label}</div>
+                            <div className="text-[11px] text-muted-foreground truncate">{s.sublabel}</div>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Popular destinations (shown when not searching) */}
+              {destQuery.trim().length === 0 && (
+                <div className="mt-2 grid grid-cols-1 gap-1.5">
+                  {DESTINATION_PRESETS.map((p) => (
+                    <motion.button
+                      key={p.id}
+                      type="button"
+                      whileTap={{ scale: 0.99 }}
+                      onClick={() => pickDest(p.label, p.lat, p.lng)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                        dest.id === p.id
+                          ? "bg-primary/10 border border-primary/40"
+                          : "neu-pressed-sm hover:shadow-neu-raised-sm"
+                      }`}
+                    >
+                      <MapPin className={`h-3.5 w-3.5 shrink-0 ${dest.id === p.id ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className={`text-xs font-semibold truncate ${dest.id === p.id ? "text-primary" : ""}`}>{p.label}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div className="p-3 rounded-xl bg-gradient-surface shadow-neu-raised-sm">

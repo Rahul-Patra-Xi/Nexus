@@ -26,7 +26,6 @@ function loadSaved(): SavedLoc | null {
     const j = JSON.parse(r) as SavedLoc;
     if (typeof j.lat === "number" && typeof j.lng === "number" && typeof j.label === "string") return j;
   } catch {
-    /* ignore */
   }
   return null;
 }
@@ -56,7 +55,6 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
       setLabel(s.label);
       setStatus("ready");
     } else {
-      // Try to predict location from IP
       setStatus("loading");
       predictLocationFromIp()
         .then((ipLoc) => {
@@ -64,7 +62,6 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
             const l = `Predicted · ${ipLoc.city}`;
             persist(ipLoc.lat, ipLoc.lng, l, "geo");
           } else {
-            // Fallback to default
             setCoords({ lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng });
             setLabel(DEFAULT_MAP_CENTER.label);
             setStatus("ready");
@@ -72,7 +69,6 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
           }
         })
         .catch(() => {
-          // Fallback to default on error
           setCoords({ lat: DEFAULT_MAP_CENTER.lat, lng: DEFAULT_MAP_CENTER.lng });
           setLabel(DEFAULT_MAP_CENTER.label);
           setStatus("ready");

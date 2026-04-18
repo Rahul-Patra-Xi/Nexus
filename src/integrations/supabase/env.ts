@@ -36,10 +36,4 @@ export function warnIfSupabaseKeyUrlMismatch(url: string | undefined, key: strin
   const urlRef = projectRefFromSupabaseUrl(url);
   const keyRef = projectRefFromSupabaseKey(key);
   if (!urlRef || !keyRef) return;
-  if (urlRef !== keyRef) {
-    console.error(
-      `[Supabase] API key is for project "${keyRef}" but VITE_SUPABASE_URL is "${urlRef}". ` +
-        `Copy the anon (public) key from Dashboard → Settings → API for the same project as the URL.`,
-    );
-  }
 }

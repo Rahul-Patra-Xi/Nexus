@@ -28,7 +28,6 @@ const ServiceDetail = () => {
   const Icon = service.icon;
   const fullModule = serviceToModulePath(service.id);
   const list = mockProviders.filter((p) => p.service === service.id);
-  // fallback generic providers
   const display = list.length
     ? list
     : [

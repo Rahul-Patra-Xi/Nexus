@@ -4,9 +4,7 @@ import { Check } from "lucide-react";
 const LABELS = ["Discover", "Select", "Confirm", "Track", "Done"] as const;
 
 type Props = {
-  /** 0–4 */
   active: number;
-  /** how many steps are used (default 5) */
   length?: number;
   className?: string;
 };
@@ -40,7 +38,6 @@ export const StepStrip = ({ active, length = 5, className }: Props) => {
   );
 };
 
-/** Shorter flow for bills etc. */
 export const StepStripShort = ({ labels, active }: { labels: string[]; active: number }) => (
   <div className="flex items-center justify-between gap-1 mb-6">
     {labels.map((lab, i) => {

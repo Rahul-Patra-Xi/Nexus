@@ -33,8 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Single source of truth: INITIAL_SESSION + SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED.
-    // Avoid racing getSession() against this (can flash wrong user or leave loading stuck).
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);

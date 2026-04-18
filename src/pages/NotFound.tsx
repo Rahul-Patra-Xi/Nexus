@@ -1,7 +1,4 @@
-import { useLocation } from "react-router-dom";const NotFound = () => {
-  const location = useLocation();
-
-
+const NotFound = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
       <div className="text-center">

@@ -1,4 +1,3 @@
-/** Haversine distance in km */
 export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -17,7 +16,6 @@ export function formatDistanceKm(km: number): string {
   return `${km.toFixed(1)} km`;
 }
 
-/** Mock road ETA from straight-line distance (urban factor) */
 export function estimateDriveMinutes(km: number): number {
   const factor = 1.35;
   const avgKmh = 22;
@@ -38,7 +36,6 @@ export type IpLocationData = {
   country: string;
 };
 
-/** Predict user location from IP address */
 export async function predictLocationFromIp(): Promise<IpLocationData | null> {
   try {
     const response = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(5000) });
@@ -60,7 +57,6 @@ export async function predictLocationFromIp(): Promise<IpLocationData | null> {
       };
     }
   } catch (e) {
-    console.debug("IP location detection failed:", e);
   }
   return null;
 }

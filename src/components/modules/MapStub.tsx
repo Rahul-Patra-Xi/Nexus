@@ -7,7 +7,6 @@ type Props = {
   className?: string;
 };
 
-/** Map-like visual (mock) — grid + pins */
 export const MapStub = ({ title = "Live map", subtitle = "Streets & traffic layer simulated", className }: Props) => {
   return (
     <div className={cn("relative rounded-2xl overflow-hidden shadow-neu-raised border border-border/40 bg-muted/30 h-44", className)}>

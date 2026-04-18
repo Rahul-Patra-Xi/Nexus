@@ -1,4 +1,3 @@
-/** Map dashboard service ids to full interactive module routes */
 export function serviceToModulePath(serviceId: string): string | null {
   switch (serviceId) {
     case "transport":

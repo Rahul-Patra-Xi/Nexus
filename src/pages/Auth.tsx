@@ -24,22 +24,13 @@ const Auth = () => {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: { display_name: name || email.split("@")[0] },
-          },
+          options: { data: { display_name: name || email.split("@")[0] } },
         });
         if (error) throw error;
-        if (!data.session) {
-          toast.success("Check your email", {
-            description: "Confirm your address to finish creating your account, then sign in here.",
-          });
-        } else {
-          toast.success("Welcome to Nexus", { description: "You're signed in." });
-        }
+        toast.success("Welcome to Nexus", { description: "You're signed in." });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

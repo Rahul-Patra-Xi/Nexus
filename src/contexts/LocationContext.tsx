@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AREA_PRESETS, DEFAULT_MAP_CENTER, type Geo } from "@/data/modulesDataset";
-import { predictLocationFromIp } from "@/lib/geo";
+import { predictLocationFromIp, reverseGeocode } from "@/lib/geo";
+
 
 const LS_KEY = "nexus_location_v1";
 
@@ -86,10 +87,10 @@ export const LocationProvider = ({ children }: { children: ReactNode }) => {
     setStatus("loading");
     setError(null);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const l = `Near you · ${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+        const l = await reverseGeocode(lat, lng);
         persist(lat, lng, l, "geo");
       },
       () => {

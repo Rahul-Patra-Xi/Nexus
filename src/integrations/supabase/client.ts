@@ -10,9 +10,12 @@ export const SUPABASE_ANON_OR_PUBLISHABLE_KEY =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
 
 if (!SUPABASE_URL || !SUPABASE_ANON_OR_PUBLISHABLE_KEY) {
-  console.error(
-    "Supabase env missing: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) in .env — use keys from the same project as the URL.",
-  );
+  const msg =
+    "❌ Supabase configuration missing. Set environment variables:\n" +
+    "  - VITE_SUPABASE_URL\n" +
+    "  - VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)\n" +
+    "On deployment, configure these in your platform's environment variables (Vercel/Netlify/etc).";
+  console.error(msg);
 } else {
   warnIfSupabaseKeyUrlMismatch(SUPABASE_URL, SUPABASE_ANON_OR_PUBLISHABLE_KEY);
 }
